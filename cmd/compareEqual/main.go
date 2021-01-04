@@ -51,7 +51,7 @@ func main() {
 	fmt.Fprintf(w, "%v\t%v\t%v\n", args[2], len(b), 100*len(duplicates)/len(b))
 	w.Flush()
 
-	fmt.Printf("\n\nDuplicate sentences:\n\n")
+	fmt.Printf("\n\n%v duplicate sentences in total:\n\n", len(duplicates))
 	for i, d := range duplicates {
 		fmt.Printf("%v: %v\n\n", i+1, d)
 	}

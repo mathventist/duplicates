@@ -1,8 +1,8 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
@@ -10,25 +10,27 @@ import (
 )
 
 func main() {
-	args := os.Args
+	var ngramSize = flag.Int("size", 3, "size of the ngram")
+	flag.Parse()
 
-	if len(args) < 2 {
+	args := flag.Args()
+	if len(args) < 1 {
 		fmt.Println("missing operand")
 		return
 	}
 
-	if len(args) > 2 {
+	if len(args) > 1 {
 		fmt.Println("too many operands")
 		return
 	}
 
-	text, err := duplicates.FileToString(args[1])
+	text, err := duplicates.FileToString(args[0])
 	if err != nil {
-		fmt.Printf("error processing %s: %v\n", args[1], err)
+		fmt.Printf("error processing %s: %v\n", args[0], err)
 		return
 	}
 
-	for _, s := range stringToNgrams(text, 3) {
+	for _, s := range stringToNgrams(text, *ngramSize) {
 		fmt.Println(s)
 	}
 }

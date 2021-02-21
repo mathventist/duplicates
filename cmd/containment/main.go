@@ -33,8 +33,14 @@ func main() {
 		return
 	}
 
-	sa := set.New(a)
-	sb := set.New(b)
+	sa := set.New()
+	for _, aa := range a {
+		sa.Insert(aa)
+	}
+	sb := set.New()
+	for _, bb := range b {
+		sb.Insert(bb)
+	}
 
 	intersection := sa.Intersection(sb)
 

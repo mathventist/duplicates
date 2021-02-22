@@ -1,34 +1,18 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
-
-	"github.com/mathventist/duplicates"
 )
 
 func main() {
-	args := os.Args
-
-	if len(args) < 2 {
-		fmt.Println("missing operand")
-		return
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		fmt.Print(preprocess(scanner.Text()))
 	}
-
-	if len(args) > 2 {
-		fmt.Println("too many operands")
-		return
-	}
-
-	text, err := duplicates.FileToString(args[1])
-	if err != nil {
-		fmt.Printf("error processing %s: %v\n", args[1], err)
-		return
-	}
-
-	fmt.Println(preprocess(text))
 }
 
 func preprocess(s string) string {

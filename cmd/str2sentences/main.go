@@ -1,51 +1,46 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
-
-	"github.com/mathventist/duplicates"
 )
 
 func main() {
-	args := os.Args
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Split(scanSentences)
 
-	if len(args) < 2 {
-		fmt.Println("missing operand")
-		return
-	}
-
-	if len(args) > 2 {
-		fmt.Println("too many operands")
-		return
-	}
-
-	text, err := duplicates.FileToString(args[1])
-	if err != nil {
-		fmt.Printf("error processing %s: %v\n", args[1], err)
-		return
-	}
-
-	for _, s := range stringToSentences(text) {
-		fmt.Println(s)
+	for scanner.Scan() {
+		fmt.Println(strings.TrimSpace(scanner.Text()))
 	}
 }
 
-func stringToSentences(s string) []string {
-	// Split into sentences
-	temp := strings.FieldsFunc(s, func(c rune) bool {
-		return c == '.' || c == '?' || c == '!'
-	})
-
-	// Trim leading and trailing whitespace. Ignore any sentences that are empty.
-	var sentences []string
-	for _, s := range temp {
-		st := strings.TrimSpace(s)
-		if len(st) > 0 {
-			sentences = append(sentences, st)
-		}
+func dropLast(data []byte) []byte {
+	if len(data) > 0 && isSentenceTerminator(data[len(data)-1]) {
+		return data[0 : len(data)-1]
 	}
 
-	return sentences
+	return data
+}
+
+func scanSentences(data []byte, atEOF bool) (advance int, token []byte, err error) {
+	if atEOF && len(data) == 0 {
+		return 0, nil, nil
+	}
+
+	if i := bytes.IndexAny(data, ".?!"); i >= 0 {
+		return i + 1, dropLast(data[0:i]), nil
+	}
+
+	if atEOF {
+		return len(data), dropLast(data), nil
+	}
+
+	return 0, nil, nil
+}
+
+func isSentenceTerminator(b byte) bool {
+	return b == '.' || b == '?' || b == '!'
 }

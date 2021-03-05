@@ -29,6 +29,10 @@ func preprocess(s string) string {
 	// Replace hyphens with single space
 	st = strings.ReplaceAll(st, "-", " ")
 
+	// Remove numerics
+	n := regexp.MustCompile(`[\d]+`)
+	st = n.ReplaceAllString(st, "")
+
 	// Compress multiple whitespaces into a single space
 	b := regexp.MustCompile(`\s+`)
 	st = b.ReplaceAllString(st, " ")

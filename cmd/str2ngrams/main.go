@@ -1,63 +1,73 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
-	"regexp"
-	"strings"
-
-	"github.com/mathventist/duplicates"
+	"os"
 )
+
+type wordAggregator struct {
+	words []string
+	size  int
+}
+
+func NewWordAggregator(size int) wordAggregator {
+	w := make([]string, size, size)
+	return wordAggregator{
+		size:  size,
+		words: w,
+	}
+}
+
+func (w wordAggregator) Push(s string) {
+	if len(w.words) == w.size {
+		for i := 0; i < w.size-1; i++ {
+			w.words[i] = w.words[i+1]
+		}
+		w.words[w.size-1] = s
+	} else {
+		w.words = append(w.words, s)
+	}
+}
+
+func (w wordAggregator) GetNgram() string {
+	s := ""
+	for i, word := range w.words {
+		if i == w.size-1 {
+			s += word
+		} else {
+			s += (word + " ")
+		}
+	}
+	return s
+}
+
+func (w wordAggregator) IsFull() bool {
+	return w.words[w.size-1] != ""
+}
 
 func main() {
 	var ngramSize = flag.Int("size", 3, "size of the ngram")
 	flag.Parse()
 
-	args := flag.Args()
-	if len(args) < 1 {
-		fmt.Println("missing operand")
-		return
-	}
+	scanner := bufio.NewScanner(os.Stdin)
+	scanner.Split(bufio.ScanWords)
 
-	if len(args) > 1 {
-		fmt.Println("too many operands")
-		return
-	}
+	//ngrams := make(map[string]struct{})
+	wg := NewWordAggregator(*ngramSize)
 
-	text, err := duplicates.FileToString(args[0])
-	if err != nil {
-		fmt.Printf("error processing %s: %v\n", args[0], err)
-		return
-	}
+	for scanner.Scan() {
+		w := scanner.Text()
+		wg.Push(w)
 
-	for _, s := range stringToNgrams(text, *ngramSize) {
-		fmt.Println(s)
-	}
-}
-
-func stringToNgrams(s string, n int) []string {
-	// Remove all non alpha numerics.
-	r := regexp.MustCompile("[^a-zA-Z0-9]+")
-	ss := r.ReplaceAllString(s, " ")
-	st := strings.Split(ss, " ")
-
-	ngrams := make(map[string]struct{})
-	for i := 0; i < len(st)-n; i++ {
-		// Create the ngram.
-		ngram := strings.Join(st[i:i+n], " ")
-
-		// Add each unique ngram.
-		if _, ok := ngrams[ngram]; !ok {
-			ngrams[ngram] = struct{}{}
+		if wg.IsFull() {
+			fmt.Println(wg.GetNgram())
 		}
+		// Track and print each unique ngram.
+		//if _, ok := ngrams[ngram]; !ok {
+		//	ngrams[ngram] = struct{}{}
+		//	fmt.Println(ngram)
+		//}
 	}
-
-	// Return the ngrams, in no particular order.
-	keys := make([]string, len(ngrams))
-	i := 0
-	for k := range ngrams {
-		keys[i] = k
-		i++
-	}
-	return keys
 }

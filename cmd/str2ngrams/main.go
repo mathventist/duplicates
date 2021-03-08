@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 )
 
 type wordAggregator struct {
@@ -21,13 +22,16 @@ func NewWordAggregator(size int) wordAggregator {
 }
 
 func (w wordAggregator) Push(s string) {
+	// Remove any sentence terminators
+	str := strings.TrimRight(s, ".!?")
+
 	if len(w.words) == w.size {
 		for i := 0; i < w.size-1; i++ {
 			w.words[i] = w.words[i+1]
 		}
-		w.words[w.size-1] = s
+		w.words[w.size-1] = str
 	} else {
-		w.words = append(w.words, s)
+		w.words = append(w.words, str)
 	}
 }
 

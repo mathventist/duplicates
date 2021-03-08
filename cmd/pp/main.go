@@ -11,7 +11,7 @@ import (
 func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	for scanner.Scan() {
-		fmt.Print(preprocess(scanner.Text()))
+		fmt.Println(preprocess(scanner.Text()))
 	}
 }
 
@@ -22,20 +22,21 @@ func preprocess(s string) string {
 	// Replace ligatures
 	st = strings.ReplaceAll(st, "æ", "ae")
 
-	// Remove internal punctuation
-	a := regexp.MustCompile(`[,'"“;:”’]`)
-	st = a.ReplaceAllString(st, "")
-
 	// Replace hyphens with single space
 	st = strings.ReplaceAll(st, "-", " ")
 
+	// Remove internal punctuation that doesn't terminate a sentence.
+	a := regexp.MustCompile(`[,'"“;:”’]`)
+	st = a.ReplaceAllString(st, "")
+
 	// Remove numerics
-	n := regexp.MustCompile(`[\d]+`)
+	n := regexp.MustCompile(`\d+`)
 	st = n.ReplaceAllString(st, "")
 
 	// Compress multiple whitespaces into a single space
-	b := regexp.MustCompile(`\s+`)
+	b := regexp.MustCompile(`[\s]{2,}`)
 	st = b.ReplaceAllString(st, " ")
 
-	return st
+	// lower case
+	return strings.ToLower(st)
 }

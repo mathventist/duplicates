@@ -1,0 +1,8 @@
+*.txt
+*.bin
+/compareEqual
+/pp
+/containment
+/resemblance
+/str2ngrams
+/str2sentences

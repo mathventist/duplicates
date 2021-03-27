@@ -58,7 +58,7 @@ func main() {
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Split(bufio.ScanWords)
 
-	//ngrams := make(map[string]struct{})
+	ngrams := make(map[string]struct{})
 	wg := NewWordAggregator(*ngramSize)
 
 	for scanner.Scan() {
@@ -66,12 +66,13 @@ func main() {
 		wg.Push(w)
 
 		if wg.IsFull() {
-			fmt.Println(wg.GetNgram())
+			ngram := wg.GetNgram()
+
+			// Track and print each unique ngram.
+			if _, ok := ngrams[ngram]; !ok {
+				ngrams[ngram] = struct{}{}
+				fmt.Println(ngram)
+			}
 		}
-		// Track and print each unique ngram.
-		//if _, ok := ngrams[ngram]; !ok {
-		//	ngrams[ngram] = struct{}{}
-		//	fmt.Println(ngram)
-		//}
 	}
 }

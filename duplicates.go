@@ -207,9 +207,9 @@ func Preprocess(s string, removeStops bool) string {
 }
 
 func dropLast(data []byte) []byte {
-	if len(data) > 0 && isSentenceTerminator(data[len(data)-1]) {
-		return data[0 : len(data)-1]
-	}
+	//if len(data) > 0 && isSentenceTerminator(data[len(data)-1]) {
+	//	return data[0:len(data)-1]
+	//}
 
 	return data
 }
@@ -221,7 +221,13 @@ func ScanSentences(data []byte, atEOF bool) (advance int, token []byte, err erro
 	}
 
 	if i := bytes.IndexAny(data, ".?!"); i >= 0 {
-		return i + 1, dropLast(data[0:i]), nil
+		// skip over any trailing whitespace
+		j := i + 1
+		for isWhiteSpace(data[j]) {
+			j++
+		}
+
+		return j, dropLast(data[0:i]), nil
 	}
 
 	if atEOF {
@@ -233,4 +239,8 @@ func ScanSentences(data []byte, atEOF bool) (advance int, token []byte, err erro
 
 func isSentenceTerminator(b byte) bool {
 	return b == '.' || b == '?' || b == '!'
+}
+
+func isWhiteSpace(b byte) bool {
+	return b == ' ' || b == '\t' || b == '\v' || b == '\f' || b == '\r' || b == '\n'
 }

@@ -222,6 +222,8 @@ func ScanSentences(data []byte, atEOF bool) (advance int, token []byte, err erro
 
 	if i := bytes.IndexAny(data, ".?!"); i >= 0 {
 		// skip over any trailing whitespace
+		// TODO: handle special cases for sentences that end with a quote, '."'
+		// TODO: handle special cases for internal '.' character appearances, such as 'St.', 'Mr.', 'Mrs.', etc
 		j := i + 1
 		for isWhiteSpace(data[j]) {
 			j++

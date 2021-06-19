@@ -206,14 +206,6 @@ func Preprocess(s string, removeStops bool) string {
 	return strings.ToLower(st)
 }
 
-func dropLast(data []byte) []byte {
-	//if len(data) > 0 && isSentenceTerminator(data[len(data)-1]) {
-	//	return data[0:len(data)-1]
-	//}
-
-	return data
-}
-
 // ScanSentences scans a file sentence by sentence.
 func ScanSentences(data []byte, atEOF bool) (advance int, token []byte, err error) {
 	if atEOF && len(data) == 0 {
@@ -221,19 +213,40 @@ func ScanSentences(data []byte, atEOF bool) (advance int, token []byte, err erro
 	}
 
 	if i := bytes.IndexAny(data, ".?!"); i >= 0 {
+
+		for abbreviationIsAtPosition(string(data[0 : i+1])) {
+			k := bytes.IndexAny(data[i+1:], ".?!")
+
+			if k == -1 {
+
+				if atEOF {
+					return len(data), data, nil
+				}
+
+				return 0, nil, nil
+			}
+
+			i += (k + 1)
+		}
+
+		// handle special cases for sentences that end with a single quote, '."'
+		if i < len(data)-1 {
+			if isEndQuote(data[i+1]) {
+				i++
+			}
+		}
+
 		// skip over any trailing whitespace
-		// TODO: handle special cases for sentences that end with a quote, '."'
-		// TODO: handle special cases for internal '.' character appearances, such as 'St.', 'Mr.', 'Mrs.', etc
 		j := i + 1
-		for isWhiteSpace(data[j]) {
+		for j < len(data) && isWhiteSpace(data[j]) {
 			j++
 		}
 
-		return j, dropLast(data[0:i]), nil
+		return j, data[0 : i+1], nil
 	}
 
 	if atEOF {
-		return len(data), dropLast(data), nil
+		return len(data), data, nil
 	}
 
 	return 0, nil, nil
@@ -245,4 +258,12 @@ func isSentenceTerminator(b byte) bool {
 
 func isWhiteSpace(b byte) bool {
 	return b == ' ' || b == '\t' || b == '\v' || b == '\f' || b == '\r' || b == '\n'
+}
+
+func isEndQuote(b byte) bool {
+	return b == '"' || b == '\''
+}
+
+func abbreviationIsAtPosition(s string) bool {
+	return strings.HasSuffix(s, "St.")
 }

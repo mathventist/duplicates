@@ -3,9 +3,12 @@ package duplicates
 import (
 	"bufio"
 	"bytes"
+	"log"
 	"os"
 	"regexp"
 	"strings"
+
+	"code.sajari.com/word2vec"
 )
 
 // Taken from https://gist.github.com/sebleier/554280
@@ -254,4 +257,42 @@ func isEndQuote(b byte) bool {
 
 func abbreviationIsAtPosition(s string) bool {
 	return strings.HasSuffix(s, "St.")
+}
+
+func CompareWord2Vec(a, b string, model *word2vec.Model) float32 {
+	similarCounter := 0
+	similarTotal := float32(0)
+
+	aWords := strings.Fields(a)
+	for _, aWord := range aWords {
+		aExpr := word2vec.Expr{}
+		aExpr.Add(1, aWord)
+
+		maxSim := float32(0)
+
+		bWords := strings.Fields(b)
+		for _, bWord := range bWords {
+			bExpr := word2vec.Expr{}
+			bExpr.Add(1, bWord)
+
+			sim, err := model.Cos(aExpr, bExpr)
+			if err != nil {
+				log.Println("error calculating cos")
+				log.Fatal(err)
+			}
+			if sim > maxSim {
+				maxSim = sim
+			}
+		}
+		if maxSim > 0 {
+			similarCounter++
+			similarTotal = similarTotal + maxSim
+		}
+	}
+
+	if similarCounter == 0 {
+		return float32(0)
+	}
+
+	return similarTotal / float32(similarCounter)
 }

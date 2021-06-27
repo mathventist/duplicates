@@ -7,3 +7,4 @@
 /str2ngrams
 /str2sentences
 /compareWord2Vec
+Makefile

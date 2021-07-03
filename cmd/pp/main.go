@@ -31,7 +31,7 @@ func main() {
 
 It removes titles, numerics, hyphens, and internal sentence punctuation, expands ligatures, and compresses multiple whitespace characters into a single whitespace character.
 
-Optionally, this utility will also strip out English stop words (see https://gist.github.com/sebleier/554280).
+Optionally, this utility also strips out English stop words (see https://gist.github.com/sebleier/554280).
 
 USAGE
   $ pp [ -h | --help ] [ -f <filename> | --file <filename> ] [ -r | --removeStops ]

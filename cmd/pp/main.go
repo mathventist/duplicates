@@ -65,6 +65,8 @@ EXAMPLES
 
 			os.Exit(1)
 		}
+
+		defer file.Close()
 	}
 
 	fi, err := file.Stat()
@@ -78,7 +80,7 @@ EXAMPLES
 	// Exit if stdin is empty.
 	size := fi.Size()
 	if size == 0 {
-		fmt.Fprintln(os.Stderr, "standard input is empty")
+		fmt.Fprintln(os.Stderr, "input is empty")
 		flag.Usage()
 
 		os.Exit(1)

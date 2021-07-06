@@ -1,12 +1,12 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
 
 	"github.com/golang-collections/collections/set"
-	"github.com/mathventist/duplicates"
 )
 
 func main() {
@@ -46,29 +46,34 @@ EXAMPLES
 		os.Exit(1)
 	}
 
-	a, err := duplicates.FileToArray(args[0])
+	a, err := os.Open(args[0])
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "error processing file: ", err)
+		fmt.Fprintln(os.Stderr, "error opening file: ", err)
 		flag.Usage()
 
 		os.Exit(1)
 	}
+	defer a.Close()
 
-	b, err := duplicates.FileToArray(args[1])
+	b, err := os.Open(args[1])
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "error processing file: ", err)
+		fmt.Fprintln(os.Stderr, "error opening file: ", err)
 		flag.Usage()
 
 		os.Exit(1)
 	}
+	defer b.Close()
 
 	sa := set.New()
-	for _, aa := range a {
-		sa.Insert(aa)
+	fs := bufio.NewScanner(a)
+	for fs.Scan() {
+		sa.Insert(fs.Text())
 	}
+
 	sb := set.New()
-	for _, bb := range b {
-		sb.Insert(bb)
+	fs = bufio.NewScanner(b)
+	for fs.Scan() {
+		sb.Insert(fs.Text())
 	}
 
 	intersection := sa.Intersection(sb)

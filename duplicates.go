@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"code.sajari.com/word2vec"
+	"github.com/golang-collections/collections/set"
 )
 
 // Taken from https://gist.github.com/sebleier/554280
@@ -257,6 +258,19 @@ func isEndQuote(b byte) bool {
 
 func abbreviationIsAtPosition(s string) bool {
 	return strings.HasSuffix(s, "St.")
+}
+
+func Containment(a, b *set.Set) float32 {
+	intersection := a.Intersection(b)
+
+	return float32(intersection.Len()) / float32(b.Len())
+}
+
+func Resemblance(a, b *set.Set) float32 {
+	intersection := a.Intersection(b)
+	union := a.Union(b)
+
+	return float32(intersection.Len()) / float32(union.Len())
 }
 
 func CompareWord2Vec(a, b string, model *word2vec.Model) float32 {

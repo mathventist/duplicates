@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/golang-collections/collections/set"
+	"github.com/mathventist/duplicates"
 )
 
 func main() {
@@ -45,8 +46,22 @@ EXAMPLES
 		os.Exit(1)
 	}
 
-	a, err := os.Open(args[0])
+	// use separate channels here because order is important!
+	c := make(chan *set.Set)
+	d := make(chan *set.Set)
+	go populateSetFromFile(args[0], c)
+	go populateSetFromFile(args[1], d)
+
+	a, b := <-c, <-d
+
+	fmt.Fprintf(os.Stdout, "%v\n", duplicates.Resemblance(a, b))
+	os.Exit(0)
+}
+
+func populateSetFromFile(fileName string, c chan *set.Set) {
+	a, err := os.Open(fileName)
 	if err != nil {
+		close(c)
 		fmt.Fprintln(os.Stderr, "error opening file: ", err)
 		flag.Usage()
 
@@ -54,30 +69,12 @@ EXAMPLES
 	}
 	defer a.Close()
 
-	b, err := os.Open(args[1])
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "error opening file: ", err)
-		flag.Usage()
-
-		os.Exit(1)
-	}
-	defer b.Close()
-
 	sa := set.New()
 	fs := bufio.NewScanner(a)
 	for fs.Scan() {
 		sa.Insert(fs.Text())
 	}
 
-	sb := set.New()
-	fs = bufio.NewScanner(b)
-	for fs.Scan() {
-		sb.Insert(fs.Text())
-	}
-
-	intersection := sa.Intersection(sb)
-	union := sa.Union(sb)
-
-	fmt.Fprintf(os.Stdout, "%v\n", float64(intersection.Len())/float64(union.Len()))
-	os.Exit(0)
+	c <- sa
+	close(c)
 }

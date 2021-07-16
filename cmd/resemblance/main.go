@@ -47,10 +47,8 @@ EXAMPLES
 	}
 
 	// use separate channels here because order is important!
-	c := make(chan *set.Set)
-	d := make(chan *set.Set)
-	go populateSetFromFile(args[0], c)
-	go populateSetFromFile(args[1], d)
+	c := populateSetFromFile(args[0])
+	d := populateSetFromFile(args[1])
 
 	a, b := <-c, <-d
 
@@ -58,23 +56,27 @@ EXAMPLES
 	os.Exit(0)
 }
 
-func populateSetFromFile(fileName string, c chan *set.Set) {
-	a, err := os.Open(fileName)
-	if err != nil {
-		close(c)
-		fmt.Fprintln(os.Stderr, "error opening file: ", err)
-		flag.Usage()
+func populateSetFromFile(fileName string) <-chan *set.Set {
+	c := make(chan *set.Set)
 
-		os.Exit(1)
-	}
-	defer a.Close()
+	go func() {
+		a, err := os.Open(fileName)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "error opening file: ", err)
+			flag.Usage()
 
-	sa := set.New()
-	fs := bufio.NewScanner(a)
-	for fs.Scan() {
-		sa.Insert(fs.Text())
-	}
+			os.Exit(1)
+		}
+		defer a.Close()
 
-	c <- sa
-	close(c)
+		sa := set.New()
+		fs := bufio.NewScanner(a)
+		for fs.Scan() {
+			sa.Insert(fs.Text())
+		}
+
+		c <- sa
+	}()
+
+	return c
 }

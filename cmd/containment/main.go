@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/golang-collections/collections/set"
+	"github.com/mathventist/duplicates"
 )
 
 func main() {
@@ -46,37 +47,37 @@ EXAMPLES
 		os.Exit(1)
 	}
 
-	a, err := os.Open(args[0])
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "error opening file: ", err)
-		flag.Usage()
+	// use separate channels here because order is important!
+	c := populateSetFromFile(args[0])
+	d := populateSetFromFile(args[1])
 
-		os.Exit(1)
-	}
-	defer a.Close()
+	a, b := <-c, <-d
 
-	b, err := os.Open(args[1])
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "error opening file: ", err)
-		flag.Usage()
-
-		os.Exit(1)
-	}
-	defer b.Close()
-
-	sa := set.New()
-	fs := bufio.NewScanner(a)
-	for fs.Scan() {
-		sa.Insert(fs.Text())
-	}
-
-	sb := set.New()
-	fs = bufio.NewScanner(b)
-	for fs.Scan() {
-		sb.Insert(fs.Text())
-	}
-
-	intersection := sa.Intersection(sb)
-	fmt.Fprintf(os.Stdout, "%v\n", float64(intersection.Len())/float64(sb.Len()))
+	fmt.Fprintf(os.Stdout, "%v\n", duplicates.Containment(a, b))
 	os.Exit(0)
+}
+
+func populateSetFromFile(fileName string) <-chan *set.Set {
+	c := make(chan *set.Set)
+
+	go func() {
+		a, err := os.Open(fileName)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "error opening file: ", err)
+			flag.Usage()
+
+			os.Exit(1)
+		}
+		defer a.Close()
+
+		sa := set.New()
+		fs := bufio.NewScanner(a)
+		for fs.Scan() {
+			sa.Insert(fs.Text())
+		}
+
+		c <- sa
+	}()
+
+	return c
 }

@@ -12,6 +12,7 @@ import (
 )
 
 func main() {
+	// TODO: complete this, add flag for removing stop words.
 	flag.Usage = func() {
 	}
 
@@ -50,19 +51,21 @@ type indexedString struct {
 	String string
 }
 
-// TODO: improve this by 1) precompute the Preprocessed strings when removeStops is true, instead of recomputing them on each iteration,
-// and 2) consider using goroutines to perform some comparisons concurrently.
+// TODO: improve this by using goroutines to perform some comparisons concurrently.
 func compare(a []string, b []string, removeStops bool) [][2]indexedString {
+	la := preprocess(a, removeStops)
+	lb := preprocess(b, removeStops)
+
 	var results [][2]indexedString
 	bar := progressbar.Default(int64(len(a) * len(b)))
 
-	for i, aa := range a {
-		for j, bb := range b {
+	for i, aa := range la {
+		for j, bb := range lb {
 			bar.Add(1)
-			if duplicates.Preprocess(aa, removeStops) == duplicates.Preprocess(bb, removeStops) {
+			if aa == bb {
 				var match [2]indexedString
-				match[0] = indexedString{i, aa}
-				match[1] = indexedString{j, bb}
+				match[0] = indexedString{i, a[i]}
+				match[1] = indexedString{j, b[j]}
 
 				results = append(results, match)
 			}
@@ -70,6 +73,18 @@ func compare(a []string, b []string, removeStops bool) [][2]indexedString {
 	}
 
 	return results
+}
+
+func preprocess(a []string, removeStops bool) []string {
+	var r []string
+	bar := progressbar.Default(int64(len(a)))
+
+	for _, aa := range a {
+		bar.Add(1)
+		r = append(r, duplicates.Preprocess(aa, removeStops))
+	}
+
+	return r
 }
 
 func populateSliceFromFile(fileName string) <-chan []string {

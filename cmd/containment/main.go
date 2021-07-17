@@ -61,22 +61,25 @@ func populateSetFromFile(fileName string) <-chan *set.Set {
 	c := make(chan *set.Set)
 
 	go func() {
-		a, err := os.Open(fileName)
+		f, err := os.Open(fileName)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "error opening file: ", err)
 			flag.Usage()
 
 			os.Exit(1)
 		}
-		defer a.Close()
+		defer f.Close()
 
-		sa := set.New()
-		fs := bufio.NewScanner(a)
+		s := set.New()
+
+		fmt.Fprintf(os.Stderr, "starting setting ngrams for "+fileName+"...\n")
+		fs := bufio.NewScanner(f)
 		for fs.Scan() {
-			sa.Insert(fs.Text())
+			s.Insert(fs.Text())
 		}
+		fmt.Fprintf(os.Stderr, "...done setting ngrams for "+fileName+"\n")
 
-		c <- sa
+		c <- s
 	}()
 
 	return c

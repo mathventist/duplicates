@@ -8,6 +8,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/mathventist/duplicates"
+	"github.com/schollz/progressbar/v3"
 )
 
 func main() {
@@ -49,11 +50,15 @@ type indexedString struct {
 	String string
 }
 
+// TODO: improve this by 1) precompute the Preprocessed strings when removeStops is true, instead of recomputing them on each iteration,
+// and 2) consider using goroutines to perform some comparisons concurrently.
 func compare(a []string, b []string, removeStops bool) [][2]indexedString {
 	var results [][2]indexedString
+	bar := progressbar.Default(int64(len(a) * len(b)))
 
 	for i, aa := range a {
 		for j, bb := range b {
+			bar.Add(1)
 			if duplicates.Preprocess(aa, removeStops) == duplicates.Preprocess(bb, removeStops) {
 				var match [2]indexedString
 				match[0] = indexedString{i, aa}

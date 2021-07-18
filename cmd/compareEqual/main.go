@@ -11,9 +11,36 @@ import (
 	"github.com/schollz/progressbar/v3"
 )
 
+var removeStops bool
+
+func init() {
+	const (
+		defaultRemoveStops = false
+	)
+
+	flag.BoolVar(&removeStops, "r", defaultRemoveStops, "remove stop words from text")
+	flag.BoolVar(&removeStops, "removeStops", defaultRemoveStops, "remove stop words from text")
+}
+
 func main() {
-	// TODO: complete this, add flag for removing stop words.
 	flag.Usage = func() {
+		usageText := `compareEqual - a utility for finding matching sentences in two files.
+
+It uses the duplicate package's Preprocess method to normalize the text before comparing.
+
+USAGE
+  $ compareEqual [ -h | --help ] [ -r | --removeStops ] FILE1 FILE2
+
+OPTIONS
+  -r, --removeStops  remove stop words from the text
+  -h, --help         print the help message
+
+EXAMPLES
+
+  $ compareEqual -r myfile1 myfile2
+  `
+
+		fmt.Println(usageText)
 	}
 
 	flag.Parse()
@@ -27,22 +54,28 @@ func main() {
 		os.Exit(1)
 	}
 
-	c := populateSliceFromFile(args[0])
-	d := populateSliceFromFile(args[1])
+	fileName1, fileName2 := args[0], args[1]
+
+	c := populateSliceFromFile(fileName1)
+	d := populateSliceFromFile(fileName2)
 
 	a, b := <-c, <-d
-	results := compare(a, b, true)
+	results := compare(a, b, fileName1, fileName2, removeStops)
 
-	// Display results
+	// Display result summary
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	fmt.Fprintln(w, "File\tNumber of sentences\tPercentage of matched sentences")
-	fmt.Fprintf(w, "%v\t%v\t%v\n", args[0], len(a), 100*len(results)/len(a))
-	fmt.Fprintf(w, "%v\t%v\t%v\n", args[1], len(b), 100*len(results)/len(b))
+	fmt.Fprintf(w, "%v\t%v\t%v\n", fileName1, len(a), 100*len(results)/len(a))
+	fmt.Fprintf(w, "%v\t%v\t%v\n", fileName2, len(b), 100*len(results)/len(b))
 	w.Flush()
 
-	fmt.Printf("\n\n%v sentences matches in total:\n\n", len(results))
+	// Display full results
+	fmt.Printf("\n\n%v matched sentences.\n\n", len(results))
 	for _, r := range results {
-		fmt.Fprintf(os.Stdout, "%v\n", r)
+		fmt.Fprintf(os.Stdout, "%v sentence number %v\n\n\t%v\n\nmatched to %v sentence number %v\n\n\t%v\n\n",
+			fileName1, r[0].Index+1, r[0].String,
+			fileName2, r[1].Index+1, r[1].String,
+		)
 	}
 }
 
@@ -51,14 +84,16 @@ type indexedString struct {
 	String string
 }
 
-// TODO: improve this by using goroutines to perform some comparisons concurrently.
-func compare(a []string, b []string, removeStops bool) [][2]indexedString {
-	la := preprocess(a, removeStops)
-	lb := preprocess(b, removeStops)
+func compare(a []string, b []string, fileName1 string, fileName2 string, removeStops bool) [][2]indexedString {
+	ca := preprocess(a, fileName1, removeStops)
+	cb := preprocess(b, fileName2, removeStops)
+
+	la, lb := <-ca, <-cb
 
 	var results [][2]indexedString
-	bar := progressbar.Default(int64(len(a) * len(b)))
+	bar := progressbar.Default(int64(len(a)*len(b)), "comparing files...")
 
+	// TODO: improve performance by using goroutines to run comparisons concurrently.
 	for i, aa := range la {
 		for j, bb := range lb {
 			bar.Add(1)
@@ -75,16 +110,21 @@ func compare(a []string, b []string, removeStops bool) [][2]indexedString {
 	return results
 }
 
-func preprocess(a []string, removeStops bool) []string {
-	var r []string
-	bar := progressbar.Default(int64(len(a)))
+func preprocess(a []string, fileName string, removeStops bool) <-chan []string {
+	c := make(chan []string)
 
-	for _, aa := range a {
-		bar.Add(1)
-		r = append(r, duplicates.Preprocess(aa, removeStops))
-	}
+	go func() {
+		var r []string
+		bar := progressbar.Default(int64(len(a)), "preprocessing "+fileName+"...")
 
-	return r
+		for _, aa := range a {
+			bar.Add(1)
+			r = append(r, duplicates.Preprocess(aa, removeStops))
+		}
+		c <- r
+	}()
+
+	return c
 }
 
 func populateSliceFromFile(fileName string) <-chan []string {

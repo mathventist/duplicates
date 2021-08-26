@@ -110,6 +110,10 @@ func compare(a []string, b []string, fileName1 string, fileName2 string, removeS
 	return results
 }
 
+func isSentenceTerminator(b byte) bool {
+	return b == '.' || b == '?' || b == '!'
+}
+
 func preprocess(a []string, fileName string, removeStops bool) <-chan []string {
 	c := make(chan []string)
 
@@ -119,7 +123,14 @@ func preprocess(a []string, fileName string, removeStops bool) <-chan []string {
 
 		for _, aa := range a {
 			bar.Add(1)
-			r = append(r, duplicates.Preprocess(aa, removeStops))
+			normalizedText := duplicates.Preprocess(aa, removeStops)
+
+			// trim trailing punctuation
+			if isSentenceTerminator(normalizedText[len(normalizedText)-1]) {
+				normalizedText = normalizedText[:len(normalizedText)-1]
+			}
+
+			r = append(r, normalizedText)
 		}
 		c <- r
 	}()

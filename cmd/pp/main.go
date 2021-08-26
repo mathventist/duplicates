@@ -31,18 +31,18 @@ func main() {
 
 It removes titles, numerics, hyphens, and internal sentence punctuation, expands ligatures, and compresses multiple whitespace characters into a single whitespace character.
 
-Optionally, this utility also strips out English stop words (see https://gist.github.com/sebleier/554280).
+Optionally, this utility also strips out 100 of the most popular English stop words (see https://gist.github.com/sebleier/554280).
 
 USAGE
   $ pp [ -h | --help ] [ -f <filename> | --file <filename> ] [ -r | --removeStops ]
 
 OPTIONS
-  -f, --file         input filename. Standard input when omitted
-  -r, --removeStops  remove stop words from the text
-  -h, --help         print the help message
+  -f, --file            input filename. Standard input when omitted
+  -r, --removeStops     remove stop words from the text
+  -h, --help            print the help message
 
 EXAMPLES
-  $ echo "testing 1 i 2 me 3 normalizing" | pp -r
+  $ echo "testing 1 i 2 me 3 normalizing." | pp -r -t
   testing normalizing
 
   $ pp -f myfile

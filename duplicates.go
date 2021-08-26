@@ -3,7 +3,7 @@ package duplicates
 import (
 	"bufio"
 	"bytes"
-	"log"
+	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -167,7 +167,7 @@ func FileToArray(filename string) ([]string, error) {
 // Preprocess prepares a string for further processing.
 func Preprocess(s string, removeStops bool) string {
 	// Remove "St.", for example in "St. Paul"
-	st := strings.ReplaceAll(s, "St.", "")
+	st := strings.ReplaceAll(s, "St. ", "")
 
 	// Replace ligatures
 	st = strings.ReplaceAll(st, "æ", "ae")
@@ -185,10 +185,13 @@ func Preprocess(s string, removeStops bool) string {
 
 	if removeStops {
 		for _, w := range stopWords {
-			re := regexp.MustCompile("\\b" + w + "\\b")
+			re := regexp.MustCompile("(?i)\\b" + w + "\\b")
 			st = re.ReplaceAllString(st, "")
 		}
 	}
+
+	// strip leading and trailing whitespace
+	st = strings.TrimSpace(st)
 
 	// Compress multiple whitespaces into a single space
 	b := regexp.MustCompile(`[\s]{2,}`)
@@ -244,10 +247,6 @@ func ScanSentences(data []byte, atEOF bool) (advance int, token []byte, err erro
 	return 0, nil, nil
 }
 
-func isSentenceTerminator(b byte) bool {
-	return b == '.' || b == '?' || b == '!'
-}
-
 func isWhiteSpace(b byte) bool {
 	return b == ' ' || b == '\t' || b == '\v' || b == '\f' || b == '\r' || b == '\n'
 }
@@ -273,14 +272,22 @@ func Resemblance(a, b *set.Set) float32 {
 	return float32(intersection.Len()) / float32(union.Len())
 }
 
-func CompareWord2Vec(a, b string, model *word2vec.Model) float32 {
+func CompareWord2Vec(a, b string, model *word2vec.Model) (float32, []string) {
+
 	similarCounter := 0
 	similarTotal := float32(0)
+	notFound := make(map[string]struct{})
 
 	aWords := strings.Fields(a)
 	for _, aWord := range aWords {
 		aExpr := word2vec.Expr{}
 		aExpr.Add(1, aWord)
+
+		_, err := aExpr.Eval(model)
+		if err != nil {
+			notFound[aWord] = struct{}{}
+			continue
+		}
 
 		maxSim := float32(0)
 
@@ -289,10 +296,15 @@ func CompareWord2Vec(a, b string, model *word2vec.Model) float32 {
 			bExpr := word2vec.Expr{}
 			bExpr.Add(1, bWord)
 
+			_, err := bExpr.Eval(model)
+			if err != nil {
+				notFound[bWord] = struct{}{}
+				continue
+			}
+
 			sim, err := model.Cos(aExpr, bExpr)
 			if err != nil {
-				log.Println("error calculating cos")
-				log.Fatal(err)
+				fmt.Fprintln(os.Stderr, "error calculating cos of "+aWord+" and "+bWord)
 			}
 			if sim > maxSim {
 				maxSim = sim
@@ -304,9 +316,27 @@ func CompareWord2Vec(a, b string, model *word2vec.Model) float32 {
 		}
 	}
 
-	if similarCounter == 0 {
-		return float32(0)
+	// return the words that weren't in the model
+	words := make([]string, 0, len(notFound))
+	for k := range notFound {
+		words = append(words, k)
 	}
 
-	return similarTotal / float32(similarCounter)
+	if similarCounter == 0 {
+		return float32(0), words
+	}
+
+	return similarTotal / float32(similarCounter), words
+}
+
+func IsWordInWord2VecModel(w string, model *word2vec.Model) bool {
+	e := word2vec.Expr{}
+	e.Add(1, w)
+
+	_, err := e.Eval(model)
+	if err == nil {
+		return true
+	}
+
+	return false
 }

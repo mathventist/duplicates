@@ -280,4 +280,112 @@ var _ = Describe("Duplicates", func() {
 			})
 		})
 	})
+
+	Describe("Preprocess", func() {
+		var output string
+
+		var input string
+		var removeStops bool
+
+		JustBeforeEach(func() {
+			output = Preprocess(input, removeStops)
+		})
+
+		Context("when input contains 'St.'", func() {
+			BeforeEach(func() {
+				input = "St. Paul and St. Peter"
+			})
+
+			It("removes all occurrences from the input", func() {
+				Expect(output).To(Equal("paul and peter"))
+			})
+		})
+
+		Context("when the input contains the ligature æ", func() {
+			BeforeEach(func() {
+				input = "hail cæsar, cæsar is the best"
+			})
+
+			It("expands all occurrences to ae", func() {
+				Expect(output).To(Equal("hail caesar caesar is the best"))
+			})
+		})
+
+		Context("when the input contains hyphens", func() {
+			BeforeEach(func() {
+				input = "thirty-eight times forty-two"
+			})
+
+			It("replaces all occurrences with a blank space", func() {
+				Expect(output).To(Equal("thirty eight times forty two"))
+			})
+		})
+
+		Context("when the input contains commas", func() {
+			BeforeEach(func() {
+				input = "Paul, and, Peter"
+			})
+
+			It("removes all occurrences from the input", func() {
+				Expect(output).To(Equal("paul and peter"))
+			})
+		})
+
+		Context("when the input contains single quotes", func() {
+			BeforeEach(func() {
+				input = "Paul 'and' 'Peter'"
+			})
+
+			It("removes all occurrences from the input", func() {
+				Expect(output).To(Equal("paul and peter"))
+			})
+		})
+
+		Context("when the input contains double quotes", func() {
+			BeforeEach(func() {
+				input = "Paul \"and\" \"Peter\""
+			})
+
+			It("removes all occurrences from the input", func() {
+				Expect(output).To(Equal("paul and peter"))
+			})
+		})
+
+		Context("when the input contains upper case letters", func() {
+			BeforeEach(func() {
+				input = "This has UpperCase letters"
+			})
+
+			It("converts the entire input to lowercase", func() {
+				Expect(output).To(Equal("this has uppercase letters"))
+			})
+		})
+
+		Context("when removeStops is enabled", func() {
+			BeforeEach(func() {
+				removeStops = true
+			})
+
+			Context("and the first word in the string is a stop word", func() {
+				BeforeEach(func() {
+					input = "A one way street"
+				})
+
+				It("removes the leading stop word", func() {
+					Expect(output).To(Equal("one way street"))
+				})
+			})
+
+			Context("and an interior word in the string is a stop word", func() {
+				BeforeEach(func() {
+					input = "one same street"
+				})
+
+				It("removes the interior stop word", func() {
+					Expect(output).To(Equal("one street"))
+				})
+			})
+		})
+	})
+
 })

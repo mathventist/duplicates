@@ -143,7 +143,7 @@ var stopWords = []string{
 	"now",
 }
 
-// FileToArray reads a file into an array, storing each sentence as an element of the array.
+// FileToArray reads a text file into a string slice, storing each sentence as an element of the slice.
 func FileToArray(filename string) ([]string, error) {
 	file, err := os.Open(filename)
 
@@ -259,6 +259,7 @@ func abbreviationIsAtPosition(s string) bool {
 	return strings.HasSuffix(s, "St.")
 }
 
+// http://ceur-ws.org/Vol-502/paper8.pdf
 func Containment(a, b *set.Set) float32 {
 	intersection := a.Intersection(b)
 
@@ -272,8 +273,9 @@ func Resemblance(a, b *set.Set) float32 {
 	return float32(intersection.Len()) / float32(union.Len())
 }
 
+// CompareWord2Vec computes a similarity score of two strings, using word2vec to compute the similarity of two words.
+// https://www.fer.unizg.hr/_download/repository/TAR-2016-ProjectReports.pdf#page=10
 func CompareWord2Vec(a, b string, model *word2vec.Model) (float32, []string) {
-
 	similarCounter := 0
 	similarTotal := float32(0)
 	notFound := make(map[string]struct{})
@@ -329,6 +331,7 @@ func CompareWord2Vec(a, b string, model *word2vec.Model) (float32, []string) {
 	return similarTotal / float32(similarCounter), words
 }
 
+// IsWordInWord2VecModel returns true if the word is included in the word2vec model.
 func IsWordInWord2VecModel(w string, model *word2vec.Model) bool {
 	e := word2vec.Expr{}
 	e.Add(1, w)

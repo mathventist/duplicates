@@ -275,7 +275,7 @@ func Resemblance(a, b *set.Set) float32 {
 
 // CompareWord2Vec computes a similarity score of two strings, using word2vec to compute the similarity of two words.
 // https://www.fer.unizg.hr/_download/repository/TAR-2016-ProjectReports.pdf#page=10
-func CompareWord2Vec(a, b string, model *word2vec.Model) (float32, []string) {
+func CompareWord2Vec(a, b string, model *word2vec.Model, coser word2vec.Coser) (float32, []string) {
 	similarCounter := 0
 	similarTotal := float32(0)
 	notFound := make(map[string]struct{})
@@ -304,7 +304,7 @@ func CompareWord2Vec(a, b string, model *word2vec.Model) (float32, []string) {
 				continue
 			}
 
-			sim, err := model.Cos(aExpr, bExpr)
+			sim, err := coser.Cos(aExpr, bExpr)
 			if err != nil {
 				fmt.Fprintln(os.Stderr, "error calculating cos of "+aWord+" and "+bWord)
 			}
